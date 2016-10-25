@@ -4,7 +4,7 @@ This is a Slack bot that asks people about KPIs
 
 ## Building
 
-```
+```bash
 $ npm install
 $ ./node_modules/typescript/bin/tsc
 ```
@@ -19,8 +19,9 @@ To run the bot you'll need:
 
 Then you can run the bot by passing the above with env vars:
 
-```
-$ AUTH_JSON=./xxx.json SLACK_TOKEN=XYZ SPREADSHEET_ID=ABC node build/index.js
+```bash
+$ AUTH_JSON=./xxx.json SLACK_TOKEN=XYZ SPREADSHEET_ID=ABC \
+node build/index.js
 ```
 
 ## Worksheets
@@ -53,6 +54,72 @@ The bot accepts the following commands:
 * `sync users` reloads the list of Slack users (this is also done every hour)
 * `list KPIs` lists the configured KPIs
 * `pending` lists the users that have pending questions (i.e. the bot asked them for a KPI but they didn't respond yet)
+
+## Deployment options
+
+### Docker
+
+You can run Kippino via Docker, there's already a [pre-built docker image](https://hub.docker.com/r/measurence/kippino/) or you can build your own from the provided `Dockerfile`.
+
+```bash
+$ docker run \
+  -v ./auth.json:/auth.json \
+  -e AUTH_JSON=/auth.json \
+  -e SLACK_TOKEN=xyz \
+  -e SPREADSHEET_ID=abc \
+  --name kippino measurence/kippino 
+```
+
+### Kubernetes / Google Conainer Service
+
+You can easily deploy Kippino on a Kubernetes cluster with the following config. The authentication JSON and the Slack token should be configured as secrets.
+
+```yaml
+---
+apiVersion: extensions/v1beta1
+kind: Deployment
+metadata:
+  name: kippino
+  labels:
+    app: kippino
+spec:
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      name: kippino
+      labels:
+        app: kippino
+    spec:
+      volumes:
+      - name: kippino-google-auth
+        secret:
+          secretName: "kippino-google-auth"
+      containers:
+      - image: "measurence/kippino:latest"
+        name: kippino
+        volumeMounts:
+        - name: "kippino-google-auth"
+          mountPath: "/kippino-google-auth/"
+          readOnly: true
+        env:
+        - name: SLACK_TOKEN
+          valueFrom:
+            secretKeyRef:
+              name: kippino
+              key: "slack-token"
+        - name: SPREADSHEET_ID
+          value: "XYZ"
+        - name: AUTH_JSON
+          value: "/kippino-google-auth/auth.json"
+        resources:
+          requests:
+            cpu: 0.1
+            memory: "256Mi"
+          limits:
+            cpu: 0.1
+            memory: "256Mi"         
+```
 
 ## Gotchas
 
