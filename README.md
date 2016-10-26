@@ -2,6 +2,8 @@
 
 This is a Slack bot that asks people about KPIs
 
+Check out the [announcement post](http://www.measurence.com/tech-blog/2016/10/25/tracking-kpis-with-slack.html) on our tech blog.
+
 ## Building
 
 ```bash
