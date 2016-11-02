@@ -433,6 +433,7 @@ updatableKpisSub_.subscribe((o) => {
       function buildQuestions(kpiIdx: number): void {
         const kpi = kpis[kpiIdx]
         const period = kpiToPeriodMap.get(kpi)
+
         if(!period) {
           console.warn(`Skipping question for KPI ${kpi.name} since period is missing`)
           if(kpiIdx < kpis.length - 1) {
@@ -440,29 +441,38 @@ updatableKpisSub_.subscribe((o) => {
           }
           return
         }
+
+        function nextQuestion(): void {
+          if(kpiIdx < kpis.length - 1) {
+            buildQuestions(kpiIdx + 1)
+          }
+        }
+
         convo.ask(`:question: *${kpi.question}* on *${period.getDisplayText()}*?`, (response, convo) => {
-          const responseValue = parseFloat(response.text)
-          if(isNaN(responseValue)) {
-            convo.say(`:exclamation: this is not a number! please give me a number for *${kpi.name}*! Don't include any currency or metric symbol or digit separator. Valid numbers are like: *124*, *1234.21*, *-5*)`)
-            buildQuestions(kpiIdx)
+          if(response.text === "skip") {
+            convo.say(`:zzz: ok, I'll skip ${kpi.name} for now...`)
+            nextQuestion()
           } else {
-            const kpiUpdate: KpiUpdate = {
-              kpi: kpi,
-              period: period,
-              value: responseValue,
-              user: user,
-              ts: LocalDateTime.now()
-            }
+            const responseValue = parseFloat(response.text)
+            if(isNaN(responseValue)) {
+              convo.say(`:exclamation: this is not a number! please give me a number for *${kpi.name}*! Don't include any currency or metric symbol or digit separator. Valid numbers are like: *124*, *1234.21*, *-5*) - you can also skip the question momentarily by saying \`skip\`.`)
+              buildQuestions(kpiIdx)
+            } else {
+              const kpiUpdate: KpiUpdate = {
+                kpi: kpi,
+                period: period,
+                value: responseValue,
+                user: user,
+                ts: LocalDateTime.now()
+              }
 
-            kpiUpdatesSub_.next(kpiUpdate)
+              kpiUpdatesSub_.next(kpiUpdate)
 
-            convo.say(`:white_check_mark: I got "*${response.text}*" for *${kpi.name}* on *${period.getDisplayText()}*.`)
-            
-            if(kpiIdx < kpis.length - 1) {
-              buildQuestions(kpiIdx + 1)
+              convo.say(`:white_check_mark: I got "*${response.text}*" for *${kpi.name}* on *${period.getDisplayText()}*.`)
+              
+              nextQuestion()
             }
           }
-          
           convo.next()
         })
       }

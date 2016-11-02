@@ -37,7 +37,7 @@ You can find [more details here](https://www.npmjs.com/package/google-spreadshee
 
 ## Running on Heroku
 
-The Heroku deploy button currently __only works for public spreadsheets__ that don't require authentication. 
+The Heroku deploy button currently __only works for public spreadsheets__ that don't require authentication.
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/measurence/kippino/tree/master)
 
@@ -89,7 +89,7 @@ $ docker run \
   --name kippino measurence/kippino
 ```
 
-### Kubernetes / Google Conainer Service
+### Kubernetes / Google Container Service
 
 You can easily deploy Kippino on a Kubernetes cluster with the following config. The authentication JSON and the Slack token should be configured as secrets.
 
