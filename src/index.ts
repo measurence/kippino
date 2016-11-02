@@ -21,7 +21,7 @@ const DATA_WORKSHEET_HEADERS = [ 'timestamp', 'kpi', 'value', 'for', 'source' ]
 
 // Check whether the required environment variables have been provided 
 
-Array.from([ 'AUTH_JSON', 'SLACK_TOKEN', 'SPREADSHEET_ID' ]).forEach((env) => {
+Array.from([ 'SLACK_TOKEN', 'SPREADSHEET_ID' ]).forEach((env) => {
   if (!process.env[env] || process.env[env] == '') {
     console.log(`Error: Specify ${env} in environment`);
     process.exit(1);
@@ -45,6 +45,7 @@ const pluralize: (s: string, n?: number, i?: boolean) => string = require('plura
 // https://www.npmjs.com/package/google-spreadsheet
 const GS = require('google-spreadsheet')
 import { 
+  GoogleAccountInfo,
   GoogleSpreadsheet, 
   GoogleSpreadsheetInfo, 
   SpreadsheetWorksheet,
@@ -97,7 +98,7 @@ periodicUpdater_.subscribe(() => {
 
 // Load the Service Account credentials (see README on how to get these) and
 // create a reference to the backing Google Spreadsheet from its ID
-const googleCredentials = require(process.env.AUTH_JSON)
+const googleCredentials: Option<GoogleAccountInfo> = process.env.AUTH_JSON ? new Some<GoogleAccountInfo>(require(process.env.AUTH_JSON)) : new None<GoogleAccountInfo>()
 const backingSpreadsheet: GoogleSpreadsheet = new GS(process.env.SPREADSHEET_ID)
 
 const spreadsheetInfoSub_ = new Rx.Subject<GoogleSpreadsheetInfo>()
@@ -539,10 +540,22 @@ controller.hears(['pending'], 'direct_message,direct_mention,mention', (bot, mes
 
 // --- start ---
 
-// Transform useServiceAccountAuth into an Observable that emits when
-// the spreadsheet access has been authenticated
-backingSpreadsheet.useServiceAccountAuth(googleCredentials, () => {
-  backingSpreadsheet.getInfo((err, spreadsheetInfo) => {
-    spreadsheetInfoSub_.next(spreadsheetInfo)
+if(googleCredentials.isDefined()) {
+  console.log("Using service account credentials")
+  // Transform useServiceAccountAuth into an Observable that emits when
+  // the spreadsheet access has been authenticated
+  backingSpreadsheet.useServiceAccountAuth(googleCredentials.get(), () => {
+    backingSpreadsheet.getInfo((err, spreadsheetInfo) => {
+      spreadsheetInfoSub_.next(spreadsheetInfo)
+    })
   })
-})
+} else {
+  console.warn("Not using service account credentials, spreadsheet must be published on the web")
+  backingSpreadsheet.getInfo((err, spreadsheetInfo) => {
+    if(err) {
+      console.error(err.message)
+    } else {
+      spreadsheetInfoSub_.next(spreadsheetInfo)
+    }
+  })  
+}

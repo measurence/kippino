@@ -43,6 +43,6 @@ export interface GoogleSpreadsheetWorksheetOptions {
 // see https://www.npmjs.com/package/google-spreadsheet#googlespreadsheet
 export interface GoogleSpreadsheet {
   useServiceAccountAuth: (account_info: GoogleAccountInfo, cb: () => void) => void,
-  getInfo: (cb: (err?: Object, info?: GoogleSpreadsheetInfo) => void) => void,
+  getInfo: (cb: (err?: Error, info?: GoogleSpreadsheetInfo) => void) => void,
   addWorksheet: (options: GoogleSpreadsheetWorksheetOptions, cb: (err: Object, worksheet: SpreadsheetWorksheet) => void) => void
 }

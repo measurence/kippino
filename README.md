@@ -15,7 +15,7 @@ $ ./node_modules/typescript/bin/tsc
 
 To run the bot you'll need:
 
-* a Service Account auth JSON for the Google Spreadsheet API, follow [these instructions](https://www.npmjs.com/package/google-spreadsheet#service-account-recommended-method) to get one. 
+* if your spreadsheet is private: a Service Account auth JSON for the Google Spreadsheet API, follow [these instructions](https://www.npmjs.com/package/google-spreadsheet#service-account-recommended-method) to get one. 
 * the spreadsheet ID: it's the alphanumeric string after `https://docs.google.com/spreadsheets/d/` in the URL of your Google Spreadsheet
 * a token for your Slack bot: [follow these instructions](https://github.com/howdyai/botkit/blob/master/readme-slack.md#getting-started) to get one for your bot 
 
@@ -25,6 +25,15 @@ Then you can run the bot by passing the above with env vars:
 $ AUTH_JSON=./xxx.json SLACK_TOKEN=XYZ SPREADSHEET_ID=ABC \
 node build/index.js
 ```
+
+The `AUTH_JSON` variable is only required if your spreadsheet is private. 
+Remember to share read/write access on the spreadsheet to the service account email that you created.
+
+### Running without authentication
+
+In case you're running the bot without authentication (i.e. without setting `AUTH_JSON`),
+you'll have to publish the spreadsheet to the web (__File > Publish to the Web__).
+You can find [more details here](https://www.npmjs.com/package/google-spreadsheet#unauthenticated-access-read-only-access-on-public-docs). 
 
 ## Worksheets
 
