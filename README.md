@@ -15,9 +15,9 @@ $ ./node_modules/typescript/bin/tsc
 
 To run the bot you'll need:
 
-* if your spreadsheet is private: a Service Account auth JSON for the Google Spreadsheet API, follow [these instructions](https://www.npmjs.com/package/google-spreadsheet#service-account-recommended-method) to get one. 
+* if your spreadsheet is private: a Service Account auth JSON for the Google Spreadsheet API, follow [these instructions](https://www.npmjs.com/package/google-spreadsheet#service-account-recommended-method) to get one.
 * the spreadsheet ID: it's the alphanumeric string after `https://docs.google.com/spreadsheets/d/` in the URL of your Google Spreadsheet
-* the token for your Slack bot: [follow these instructions](https://github.com/howdyai/botkit/blob/master/readme-slack.md#getting-started) to get one for your bot 
+* the token for your Slack bot: [follow these instructions](https://github.com/howdyai/botkit/blob/master/readme-slack.md#getting-started) to get one for your bot
 
 Then you can run the bot by passing the above with env vars:
 
@@ -26,16 +26,18 @@ $ AUTH_JSON=./xxx.json SLACK_TOKEN=XYZ SPREADSHEET_ID=ABC \
 node build/index.js
 ```
 
-The `AUTH_JSON` variable is only required if your spreadsheet is private. 
+The `AUTH_JSON` variable is only required if your spreadsheet is private.
 Remember to share read/write access on the spreadsheet to the service account email that you created.
 
 ### Running without authentication
 
 In case you're running the bot without authentication (i.e. without setting `AUTH_JSON`),
 you'll have to publish the spreadsheet to the web (__File > Publish to the Web__).
-You can find [more details here](https://www.npmjs.com/package/google-spreadsheet#unauthenticated-access-read-only-access-on-public-docs). 
+You can find [more details here](https://www.npmjs.com/package/google-spreadsheet#unauthenticated-access-read-only-access-on-public-docs).
 
 ## Running on Heroku
+
+The Heroku deploy button currently __only works for public spreadsheets__ that don't require authentication. 
 
 [![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/measurence/kippino/tree/master)
 
@@ -51,7 +53,7 @@ The `KPIs` worksheet is where you put the KPIs you want to track. Each KPI must 
 * `question`: this is the text that gets used to create the question together with the period (for instance if the `question` field is `How many customer signed up` and the period is `May 1st, 2016`, then the bot will ask `How many customer signed up on May 1st, 2016?`)
 * `owner-slack`: the Slack username of the user that will be asked about this KPI (this may be different from the name that you see in the chat, you can look up the username on the Slack profile of the user)
 * `frequency`: how often to collect the value of this KPI (`daily`, `weekly`, `monthly`)
-* `since`: the date (`YYYY-MM-DD`) since you want to track this KPI - in case of weekly KPIs it must be the Monday of that week, in case of monthly KPIs it must be the 1st day of that month. 
+* `since`: the date (`YYYY-MM-DD`) since you want to track this KPI - in case of weekly KPIs it must be the Monday of that week, in case of monthly KPIs it must be the 1st day of that month.
 * `kippino-enable`: set this to `true` or `yes` if you want to enable this KPI.
 
 The `Data` worksheet is where Kippino puts the values collected from your team. Each data point has the following attributes:
@@ -84,7 +86,7 @@ $ docker run \
   -e AUTH_JSON=/auth.json \
   -e SLACK_TOKEN=xyz \
   -e SPREADSHEET_ID=abc \
-  --name kippino measurence/kippino 
+  --name kippino measurence/kippino
 ```
 
 ### Kubernetes / Google Conainer Service
@@ -144,7 +146,7 @@ spec:
 
 Currently the bot is quite stupid and it will start asking questions as soon as a new day starts in the bot timezone.
 
-It will also keep waiting for an answer "forever", it doesn't keep "nudging" people until they respond. 
+It will also keep waiting for an answer "forever", it doesn't keep "nudging" people until they respond.
 
 ### Spreadsheet locale and number formatting
 
