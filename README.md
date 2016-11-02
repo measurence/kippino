@@ -17,7 +17,7 @@ To run the bot you'll need:
 
 * if your spreadsheet is private: a Service Account auth JSON for the Google Spreadsheet API, follow [these instructions](https://www.npmjs.com/package/google-spreadsheet#service-account-recommended-method) to get one. 
 * the spreadsheet ID: it's the alphanumeric string after `https://docs.google.com/spreadsheets/d/` in the URL of your Google Spreadsheet
-* a token for your Slack bot: [follow these instructions](https://github.com/howdyai/botkit/blob/master/readme-slack.md#getting-started) to get one for your bot 
+* the token for your Slack bot: [follow these instructions](https://github.com/howdyai/botkit/blob/master/readme-slack.md#getting-started) to get one for your bot 
 
 Then you can run the bot by passing the above with env vars:
 
@@ -34,6 +34,12 @@ Remember to share read/write access on the spreadsheet to the service account em
 In case you're running the bot without authentication (i.e. without setting `AUTH_JSON`),
 you'll have to publish the spreadsheet to the web (__File > Publish to the Web__).
 You can find [more details here](https://www.npmjs.com/package/google-spreadsheet#unauthenticated-access-read-only-access-on-public-docs). 
+
+## Running on Heroku
+
+[![Deploy](https://www.herokucdn.com/deploy/button.svg)](https://heroku.com/deploy?template=https://github.com/measurence/kippino/tree/master)
+
+Never heard of Heroku? Here's how to install it: [https://youtu.be/8lzdCWoiDbY](https://youtu.be/8lzdCWoiDbY)
 
 ## Worksheets
 

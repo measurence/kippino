@@ -1,0 +1,28 @@
+{
+  "name": "Kippino",
+  "description": "A Slack bot that keeps track of your KPIs",
+  "keywords": [
+    "productivity",
+    "KPI",
+    "slack",
+    "bot"
+  ],
+  "website": "http://www.measurence.com/tech-blog/2016/10/25/tracking-kpis-with-slack.html",
+  "repository": "https://github.com/measurence/kippino",
+  "image": "node:6.8.0",
+  "env": {
+    "SLACK_TOKEN": {
+      "description": "The token for your Slack bot (see README)",
+      "required": true
+    },
+    "SPREADSHEET_ID": {
+      "description": "The ID of your Google Spreadsheet (see README)",
+      "required": true
+    },
+    "NPM_CONFIG_PRODUCTION": {
+      "description": "NPM_CONFIG_PRODUCTION",
+      "value": "false",
+      "required": true
+    }
+  }
+}

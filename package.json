@@ -20,11 +20,15 @@
   "scripts": {
     "start": "node build/index.js",
     "build": "./node_modules/typescript/bin/tsc",
+    "postinstall": "npm run build",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [
     "bot"
   ],
   "author": "Federico Feroldi <fferoldi@measurence.com>",
-  "license": "MIT"
+  "license": "MIT",
+  "engines": {
+    "node": "6.8.0"
+  }
 }
