@@ -20,7 +20,7 @@
   "scripts": {
     "start": "node build/index.js",
     "build": "./node_modules/typescript/bin/tsc",
-    "postinstall": "npm run build",
+    "postinstall": "if [ $BUILD_ON_INSTALL ]; then npm run build; fi",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [

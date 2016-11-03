@@ -20,8 +20,13 @@
       "required": true
     },
     "NPM_CONFIG_PRODUCTION": {
-      "description": "NPM_CONFIG_PRODUCTION",
+      "description": "Whether to install dev dependencies",
       "value": "false",
+      "required": true
+    },
+    "BUILD_ON_INSTALL": {
+      "description": "Whether to build the script after installing deps",
+      "value": "true",
       "required": true
     }
   }
