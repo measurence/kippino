@@ -395,7 +395,12 @@ kpiUpdatesWithDataWorksheetSub_.subscribe((o) => {
   })
 })
 
+// users that are currently questioned
 const activeUserNames: Set<string> = new Set()
+
+// KPIs that are paused (the owner doesn't want to answer yet)
+// each KPI is tuple with name of the KPI and timestamp of last question
+const pausedKpis: Map<string, LocalDateTime> = new Map()
 
 updatableKpisSub_.subscribe((o) => {
   o.updatableKpisByOwner.forEach((kpiToPeriodMap, user) => {
@@ -431,26 +436,41 @@ updatableKpisSub_.subscribe((o) => {
       })
 
       function buildQuestions(kpiIdx: number): void {
-        const kpi = kpis[kpiIdx]
-        const period = kpiToPeriodMap.get(kpi)
-
-        if(!period) {
-          console.warn(`Skipping question for KPI ${kpi.name} since period is missing`)
-          if(kpiIdx < kpis.length - 1) {
-            buildQuestions(kpiIdx + 1)
-          }
-          return
-        }
-
+        // go to next question
         function nextQuestion(): void {
           if(kpiIdx < kpis.length - 1) {
             buildQuestions(kpiIdx + 1)
           }
         }
 
+        const kpi = kpis[kpiIdx]
+        const period = kpiToPeriodMap.get(kpi)
+
+        if(!period) {
+          console.warn(`Skipping question for KPI ${kpi.name} since period is missing`)
+          nextQuestion()
+          return
+        }
+
+        const pauseTime = pausedKpis.get(kpi.name)
+        if(pauseTime) {
+          if(pauseTime.plusDays(1).isAfter(LocalDateTime.now())) {
+            console.log(`Skipping paused KPI ${kpi.name} for user ${user.name} (since ${pausedKpis.get(kpi.name)})`)
+            nextQuestion()
+            return
+          } else {
+            console.log(`Unpausing KPI ${kpi.name} for user ${user.name}`)
+            pausedKpis.delete(kpi.name)
+          }          
+        }
+
         convo.ask(`:question: *${kpi.question}* on *${period.getDisplayText()}*?`, (response, convo) => {
-          if(response.text === "skip") {
-            convo.say(`:zzz: ok, I'll skip ${kpi.name} for now...`)
+          const lcText = response.text.toLowerCase()
+          if(lcText === "skip" || lcText === "later") {
+            console.log(`User ${user.name} skipped ${kpi.name}`)
+            convo.say(`:zzz: ok, I'll skip *${kpi.name}* for this round of questions...`)
+            // remember when the user skipped this question
+            pausedKpis.set(kpi.name, LocalDateTime.now())
             nextQuestion()
           } else {
             const responseValue = parseFloat(response.text)
@@ -499,6 +519,7 @@ function addRobotReaction(bot: any, message: BotKitTypes.Message) {
 controller.hears(['instructions', '^help'], 'direct_message,direct_mention,mention', (bot, message) => {
   bot.reply(message, "Hello! I'm Kippino, the KPI bot! My job is to collect KPIs from our team, I may be annoying some times but that's my job!")
   bot.reply(message, "I will be sleeping most of the time, but I listen to certain commands: *help*, *reload KPIs*, *reload users*, *list kpis*, *pending*.")
+  bot.reply(message, "From time to time I will ask you questions about interesting KPIs, if you don't have the answer yet, feel free to answer `skip` or `later`.")
   bot.reply(message, "You can check out the data I'm collecting here: https://docs.google.com/spreadsheets/d/" + process.env.SPREADSHEET_ID)
   bot.reply(message, "Talk to you soon!")
 })
