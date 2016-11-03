@@ -1,6 +1,6 @@
 {
   "name": "bot-kpis",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "A bot that collects KPIs from people",
   "main": "build/index.js",
   "dependencies": {
