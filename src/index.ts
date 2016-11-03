@@ -66,10 +66,13 @@ import { Option, Some, None } from './Option'
 
 import * as SpreadsheetHelpers from './SpreadsheetHelpers'
 
+import { buildQuestionThread } from './QuestionThread'
+
 // Models
 import { KPI } from './KPI'
 import { KpiFrequency } from './KpiFrequency'
 import { KpiPeriod } from './KpiPeriod'
+import { KpiUpdate } from './KpiUpdate'
 import { KpiWorksheetRow, DataWorksheetRow } from './worksheets'
 
 // Commands we can trigger on our bot
@@ -362,14 +365,6 @@ const updatableKpisSub_ = kpisWithLastEvaluationAndUsersSub_.map((o) => {
   }
 })
 
-type KpiUpdate = {
-  kpi: KPI
-  period: KpiPeriod
-  value: string | number
-  user: BotKitTypes.SlackUser
-  ts: LocalDateTime
-}
-
 const kpiUpdatesSub_: Rx.Subject<KpiUpdate> = new Rx.Subject()
 
 const kpiUpdatesWithDataWorksheetSub_ = Rx.Observable.combineLatest(
@@ -400,7 +395,7 @@ const activeUserNames: Set<string> = new Set()
 
 // KPIs that are paused (the owner doesn't want to answer yet)
 // each KPI is tuple with name of the KPI and timestamp of last question
-const pausedKpis: Map<string, LocalDateTime> = new Map()
+const kpiPausedAt: Map<string, LocalDateTime> = new Map()
 
 updatableKpisSub_.subscribe((o) => {
   o.updatableKpisByOwner.forEach((kpiToPeriodMap, user) => {
@@ -410,22 +405,46 @@ updatableKpisSub_.subscribe((o) => {
       return  
     }
 
-    console.log(`Starting conversation with user ${user.name} for ${kpiToPeriodMap.size} KPIs`)
-
     // remember that we're currently talking to this user
     activeUserNames.add(user.name)
+    
+    console.log(`Starting conversation with user ${user.name} for ${kpiToPeriodMap.size} KPIs`)
 
-    const startPrivateConversation = function(message: { user: string }, cb: (err: Error, convo: BotKitTypes.Conversation) => void) {
-      return bot.startPrivateConversation(message, cb)
+    const kpis = Array.from(kpiToPeriodMap.entries())
+
+    // Skip paused KPIs and remove them from kpiPauseTime if pause expired 
+    const pendingKpis = kpis.filter(([kpi, period]) => {
+      const pausedAt = kpiPausedAt.get(kpi.name)
+      if(pausedAt) {
+        const willResumeAt = pausedAt.plusDays(1)
+        const willBeResumed = willResumeAt.isAfter(LocalDateTime.now())
+        // Skip KPI for 1 day
+        if(willBeResumed) {
+          console.log(`Skipping paused KPI ${kpi.name} for user ${user.name} (since ${kpiPausedAt.get(kpi.name)})`)
+          return(false)
+        } else {
+          console.log(`Resuming KPI ${kpi.name} for user ${user.name}`)
+          kpiPausedAt.delete(kpi.name)
+          return(true)
+        }          
+      } else {
+        return(true)
+      }
+    })
+
+    if(pendingKpis.length === 0) {
+      console.log(`No pending KPIs for user ${user.name}`)
+      activeUserNames.delete(user.name)
+      return
     }
 
-    const startPrivateConversation_: ({ user: string }) => Rx.Observable<BotKitTypes.Conversation> = Rx.Observable.bindNodeCallback(startPrivateConversation) 
+    bot.startPrivateConversation({ user: user.id }, (err, convo) => {
+      if(err) {
+        console.error(`Error while opening conversation with user ${user.name}: ${err.message}`)
+        activeUserNames.delete(user.name)
+        return
+      }
 
-    const privateConversationWithUser_ = startPrivateConversation_({ user: user.id })
-
-    const kpis = Array.from(kpiToPeriodMap.keys())
-
-    privateConversationWithUser_.subscribe((convo) => {
       // convo.say('Hello!')
 
       convo.on('end', (convo) => {
@@ -435,70 +454,28 @@ updatableKpisSub_.subscribe((o) => {
         botCommandsSub_.next(BotCommand.RELOAD_KPIS)
       })
 
-      function buildQuestions(kpiIdx: number): void {
-        // go to next question
-        function nextQuestion(): void {
-          if(kpiIdx < kpis.length - 1) {
-            buildQuestions(kpiIdx + 1)
-          }
-        }
-
-        const kpi = kpis[kpiIdx]
-        const period = kpiToPeriodMap.get(kpi)
-
-        if(!period) {
-          console.warn(`Skipping question for KPI ${kpi.name} since period is missing`)
-          nextQuestion()
+      // build a conversation thread starting from first KPI
+      buildQuestionThread(user, pendingKpis, convo, (err, res) => {
+        if(err) {
+          console.error(`Error while questioning user ${user.name}: ${err.message}`)
           return
         }
+        
+        console.log(`Conversation with user ${user.name} completed`)
 
-        const pauseTime = pausedKpis.get(kpi.name)
-        if(pauseTime) {
-          if(pauseTime.plusDays(1).isAfter(LocalDateTime.now())) {
-            console.log(`Skipping paused KPI ${kpi.name} for user ${user.name} (since ${pausedKpis.get(kpi.name)})`)
-            nextQuestion()
-            return
-          } else {
-            console.log(`Unpausing KPI ${kpi.name} for user ${user.name}`)
-            pausedKpis.delete(kpi.name)
-          }          
-        }
-
-        convo.ask(`:question: *${kpi.question}* on *${period.getDisplayText()}*?`, (response, convo) => {
-          const lcText = response.text.toLowerCase()
-          if(lcText === "skip" || lcText === "later") {
-            console.log(`User ${user.name} skipped ${kpi.name}`)
-            convo.say(`:zzz: ok, I'll skip *${kpi.name}* for this round of questions...`)
-            // remember when the user skipped this question
-            pausedKpis.set(kpi.name, LocalDateTime.now())
-            nextQuestion()
-          } else {
-            const responseValue = parseFloat(response.text)
-            if(isNaN(responseValue)) {
-              convo.say(`:exclamation: this is not a number! please give me a number for *${kpi.name}*! Don't include any currency or metric symbol or digit separator. Valid numbers are like: *124*, *1234.21*, *-5*) - you can also skip the question momentarily by saying \`skip\`.`)
-              buildQuestions(kpiIdx)
-            } else {
-              const kpiUpdate: KpiUpdate = {
-                kpi: kpi,
-                period: period,
-                value: responseValue,
-                user: user,
-                ts: LocalDateTime.now()
-              }
-
-              kpiUpdatesSub_.next(kpiUpdate)
-
-              convo.say(`:white_check_mark: I got "*${response.text}*" for *${kpi.name}* on *${period.getDisplayText()}*.`)
-              
-              nextQuestion()
-            }
-          }
-          convo.next()
+        // update paused KPIs
+        // FIXME this loop does not work
+        res.pausedKpis.forEach((since, kpiName) => {
+          console.log(`Pausing KPI ${kpiName} since ${since}`)
+          kpiPausedAt.set(kpiName, since)
         })
-      }
 
-      buildQuestions(0)
-      
+        // produce KPI updates
+        res.kpiUpdates.forEach((kpiUpdate) => {
+          console.log(`User ${user.name} updated KPI ${kpiUpdate.kpi.name} for ${kpiUpdate.period}`)
+          kpiUpdatesSub_.next(kpiUpdate)
+        })
+      })
     })
 
   })
