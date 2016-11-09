@@ -4,7 +4,7 @@
   "description": "A bot that collects KPIs from people",
   "main": "build/index.js",
   "dependencies": {
-    "@reactivex/rxjs": "^5.0.0-rc.1",
+    "@reactivex/rxjs": "=5.0.0-rc.1",
     "botkit": "^0.2.2",
     "google-spreadsheet": "^2.0.3",
     "js-joda": "^1.1.12",
