@@ -32,6 +32,13 @@ Array.from([ 'SLACK_TOKEN', 'SPREADSHEET_ID' ]).forEach((env) => {
 const installSourceMaps = require('source-map-support').install
 installSourceMaps()
 
+
+export interface NpmPackage {
+  version: string
+}
+
+const npmPackage: NpmPackage = require('../package.json')
+
 // BotKit 
 // https://github.com/howdyai/botkit
 const BotKit = require('botkit/lib/Botkit')
@@ -501,7 +508,7 @@ function addRobotReaction(bot: any, message: BotKitTypes.Message) {
 }
 
 controller.hears(['instructions', '^help'], 'direct_message,direct_mention,mention', (bot, message) => {
-  bot.reply(message, "Hello! I'm Kippino, the KPI bot! My job is to collect KPIs from our team, I may be annoying some times but that's my job!")
+  bot.reply(message, `Hello! I'm Kippino (${npmPackage.version}), the KPI bot! My job is to collect KPIs from our team, I may be annoying some times but that's my job!`)
   bot.reply(message, "I will be sleeping most of the time, but I listen to certain commands: *help*, *reload KPIs*, *reload users*, *list kpis*, *pending*.")
   bot.reply(message, "From time to time I will ask you questions about interesting KPIs, if you don't have the answer yet, feel free to answer `skip` or `later`.")
   bot.reply(message, "You can check out the data I'm collecting here: https://docs.google.com/spreadsheets/d/" + process.env.SPREADSHEET_ID)
@@ -554,6 +561,8 @@ controller.hears(['pending'], 'direct_message,direct_mention,mention', (bot, mes
 })
 
 // --- start ---
+
+console.log(`Starting Kippino ${npmPackage.version}`)
 
 if(googleCredentials.isDefined()) {
   console.log("Using service account credentials")
