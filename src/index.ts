@@ -274,23 +274,30 @@ const kpisWithLastEvaluationSub_ = kpisWithDataWorksheetSub_.flatMap((o) => {
 
 // decide if/which KPI needs update
 function getKpisThatNeedsUpdate(now: LocalDateTime, kpis: KPI[], kpiLastEvaluatedAt: Map<string, LocalDate>): Map<KPI, KpiPeriod> {
-  const emptyMap: Map<KPI, KpiPeriod> = new Map()
-  return kpis.filter((kpi) => {
-    // only deal with enabled KPIs
+  
+  // only deal with enabled KPIs
+  const enabledKpis = kpis.filter((kpi) => {
     return kpi.isEnabled
-  }).reduce((acc, kpi) => {
-    const lastEvaluatedAt: LocalDate | undefined = kpiLastEvaluatedAt.get(kpi.name)
-    if(lastEvaluatedAt) {
-      const lastEvaluatedPeriod = kpi.getKpiPeriodFromDate(lastEvaluatedAt)
-      const nextEvaluationPeriod = lastEvaluatedPeriod.nextPeriod()
-      if(nextEvaluationPeriod.endOfPeriod().isBefore(now)) {
-        return acc.set(kpi, nextEvaluationPeriod)
-      } else {
-        return acc
-      }
+  })
+  
+  // build a map of KPI to period to be evaluated
+  const emptyMap: Map<KPI, KpiPeriod> = new Map()
+  return enabledKpis.reduce((acc, kpi) => {
+    // get the last period this KPI has been evaluated
+    const lastEvaluatedAt = kpiLastEvaluatedAt.get(kpi.name)
+    
+    // if we have a last period, calculate the next one
+    // or else take the first evaluation period as the next
+    const nextEvaluationPeriod = lastEvaluatedAt ?
+      kpi.getKpiPeriodFromDate(lastEvaluatedAt).nextPeriod() :
+      kpi.getFirstKpiPeriod()
+    
+    if(nextEvaluationPeriod.endOfPeriod().isBefore(now)) {
+      // if we're after the end of the next evaluation period
+      // this KPI needs to be evaluated
+      return acc.set(kpi, nextEvaluationPeriod)
     } else {
-      const firstEvaluationAt = kpi.getFirstKpiPeriod()
-      return acc.set(kpi, firstEvaluationAt)
+      return acc
     }
   }, emptyMap)
 }
