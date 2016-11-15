@@ -302,20 +302,25 @@ function getKpisThatNeedsUpdate(now: LocalDateTime, kpis: KPI[], kpiLastEvaluate
   // build a map of KPI to period to be evaluated
   const emptyMap: Map<KPI, KpiPeriod> = new Map()
   return enabledKpis.reduce((acc, kpi) => {
-    // get the last period this KPI has been evaluated
-    const lastEvaluatedAt = kpiLastEvaluatedAt.get(kpi.name)
-    
-    // if we have a last period, calculate the next one
-    // or else take the first evaluation period as the next
-    const nextEvaluationPeriod = lastEvaluatedAt ?
-      kpi.getKpiPeriodFromDate(lastEvaluatedAt).nextPeriod() :
-      kpi.getFirstKpiPeriod()
-    
-    if(nextEvaluationPeriod.endOfPeriod().isBefore(now)) {
-      // if we're after the end of the next evaluation period
-      // this KPI needs to be evaluated
-      return acc.set(kpi, nextEvaluationPeriod)
-    } else {
+    try {
+      // get the last period this KPI has been evaluated
+      const lastEvaluatedAt = kpiLastEvaluatedAt.get(kpi.name)
+      
+      // if we have a last period, calculate the next one
+      // or else take the first evaluation period as the next
+      const nextEvaluationPeriod = lastEvaluatedAt ?
+        kpi.getKpiPeriodFromDate(lastEvaluatedAt).nextPeriod() :
+        kpi.getFirstKpiPeriod()
+      
+      if(nextEvaluationPeriod.endOfPeriod().isBefore(now)) {
+        // if we're after the end of the next evaluation period
+        // this KPI needs to be evaluated
+        return acc.set(kpi, nextEvaluationPeriod)
+      } else {
+        return acc
+      }
+    } catch(e) {
+      console.error(`Skipping invalid KPI ${kpi.name}: ${(<Error>e).message}`)
       return acc
     }
   }, emptyMap)
