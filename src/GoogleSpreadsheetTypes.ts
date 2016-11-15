@@ -44,5 +44,5 @@ export interface GoogleSpreadsheetWorksheetOptions {
 export interface GoogleSpreadsheet {
   useServiceAccountAuth: (account_info: GoogleAccountInfo, cb: () => void) => void,
   getInfo: (cb: (err?: Error, info?: GoogleSpreadsheetInfo) => void) => void,
-  addWorksheet: (options: GoogleSpreadsheetWorksheetOptions, cb: (err: Object, worksheet: SpreadsheetWorksheet) => void) => void
+  addWorksheet: (options: GoogleSpreadsheetWorksheetOptions, cb: (err: Error, worksheet: SpreadsheetWorksheet) => void) => void
 }

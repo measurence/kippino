@@ -133,6 +133,10 @@ spreadsheetInfoSub_.subscribe((spreadsheetInfo) => {
       title: KPIS_WORKSHEET_TITLE,
       headers: KPIS_WORKSHEET_HEADERS
     }, (err, kpisWorksheet) => {
+      if(err) {
+        console.error(`Unable to create the KPIs worksheet: ${err.message}`)
+        return
+      }
       kpisWorksheetSub_.next(kpisWorksheet)
     })
   }
@@ -154,8 +158,12 @@ spreadsheetInfoSub_.subscribe((spreadsheetInfo) => {
     backingSpreadsheet.addWorksheet({
       title: DATA_WORKSHEET_TITLE,
       headers: DATA_WORKSHEET_HEADERS
-    }, (err, kpisWorksheet) => {
-      dataWorksheetSub_.next(kpisWorksheet)
+    }, (err, dataWorksheet) => {
+      if(err) {
+        console.error(`Unable to create the Data worksheet: ${err.message}`)
+        return
+      }
+      dataWorksheetSub_.next(dataWorksheet)
     })
   }
 })
@@ -187,6 +195,10 @@ loadedKpisWorksheetSub_.debounceTime(10 * 1000).subscribe((kpiWorksheet: Spreads
   kpiWorksheet.getRows({ 
     offset: 1 // skip worksheet header
   }, (err, rows: KpiWorksheetRow[]) => {
+    if(err) {
+      console.error(`Unable to fetch KPI rows: ${err.message}`)
+      return
+    }
     kpiWorksheetRowsSub_.next(rows)
   });
 })
@@ -570,6 +582,10 @@ if(googleCredentials.isDefined()) {
   // the spreadsheet access has been authenticated
   backingSpreadsheet.useServiceAccountAuth(googleCredentials.get(), () => {
     backingSpreadsheet.getInfo((err, spreadsheetInfo) => {
+      if(err) {
+        console.error(`Cannot fetch spreadsheet info, check that the service account is valid: ${err.message}`)
+        return
+      }
       spreadsheetInfoSub_.next(spreadsheetInfo)
     })
   })
@@ -577,9 +593,9 @@ if(googleCredentials.isDefined()) {
   console.warn("Not using service account credentials, spreadsheet must be published on the web")
   backingSpreadsheet.getInfo((err, spreadsheetInfo) => {
     if(err) {
-      console.error(err.message)
-    } else {
-      spreadsheetInfoSub_.next(spreadsheetInfo)
-    }
+      console.error(`Cannot fetch spreadsheet info, check that the spreadsheet is published on the web: ${err.message}`)
+      return
+    } 
+    spreadsheetInfoSub_.next(spreadsheetInfo)
   })  
 }
